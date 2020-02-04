@@ -4,10 +4,6 @@ from remote_UI import Ui_mainWindow
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 class button:
-    __green = "rgb(0, 170, 127);"
-    __red = "rgb(170, 0, 0);"
-    __linked = False
-    uiButton = {}
 
     def __init__(self, uiButton: QtWidgets.QPushButton):
         self.uiButton = uiButton
@@ -16,14 +12,21 @@ class button:
     def specialAction(self):
         pass
 
-    def __action(self):
-        print("Doar Test")
-        self.__swapColors()
+    def _action(self):
         self.specialAction()
 
     def __connectUi(self):
-        self.uiButton.clicked.connect(self.__action)
+        self.uiButton.clicked.connect(self._action)
 
+class colorButton(button):
+    __green = "rgb(0, 170, 127);"
+    __red = "rgb(170, 0, 0);"
+    __linked = False
+
+    def _action(self):
+        self.__swapColors()
+        self.specialAction()
+        
     def __swapColors(self):
         self.uiButton.setStyleSheet("background-color: " + self.__green)
         self.__linkedButton.uiButton.setStyleSheet("background-color: " + self.__red)
@@ -38,9 +41,10 @@ class RemoteApp:
     def __init__(self, ui: Ui_mainWindow):
         # Assigned Buttons
         self.ui = ui
-        self.__connect = button(ui.ConnectButton)
-        self.__disconnect = button(ui.DisconnectButton)
+        self.__connect = colorButton(ui.ConnectButton)
+        self.__disconnect = colorButton(ui.DisconnectButton)
         self.__connect.link(self.__disconnect)
+
 
 
 if __name__ == "__main__":
