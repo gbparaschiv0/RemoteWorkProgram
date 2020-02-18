@@ -2,6 +2,58 @@ from __future__ import annotations
 import sys
 from remote_UI import Ui_mainWindow
 from PyQt5 import QtCore, QtGui, QtWidgets
+from ctypes import*
+import time
+
+on = 1
+off = 0
+
+class usbControl:
+    __ECU_pins = 12
+    __power = 1
+    def __init__(self):
+        self.mydll = cdll.LoadLibrary(".\libMCP2200.dll")
+        self.__pinStatus = 0
+
+    def connect(self):
+        retVal = 0
+        retVal = self.mydll.MCP2200_connect()
+
+        # If connection
+        if(retVal == 0):
+            self.mydll.update_pins(self.__pinStatus)
+
+        return retVal
+
+    def disconnect(self):
+        self.mydll.MCP2200_disconnect()
+
+    def reset_to_default(self):
+        self.__pinStatus = 0
+        self.__write()
+
+    def __write(self):
+        self.mydll.update_pins(self.__pinStatus)
+
+    def power(self, setState):
+        if(setState == on):
+            self.__pinStatus |= self.__power
+        else:
+            self.__pinStatus &= ~self.__power
+        self.__write()
+        return
+
+    def flash_mode(self):
+        self.__pinStatus &= ~self.__ECU_pins
+        self.power(off)
+        time.sleep(1)
+        self.power(on)
+
+    def run_mode(self):
+        self.__pinStatus |= self.__ECU_pins
+        self.power(off)
+        time.sleep(1)
+        self.power(on)
 
 class operationsType:
     def __init__(self, bt: button):
@@ -31,39 +83,39 @@ class commands:
 
 class connectCm(commands):
     def execute(self):
-        print("connectCm")
-        self.operation.swapColors()
-        self.operation.swapFrames()
+        if(MCP2200.connect() == 0):
+            self.operation.swapColors()
+            self.operation.swapFrames()
 
 class disconnectCm(commands):
     def execute(self):
+        MCP2200.disconnect()
         self.operation.swapColors()
         self.operation.swapFrames()
-        print("disconnectCm")
 
 class flashCm(commands):
     def execute(self):
+        MCP2200.flash_mode()
         self.operation.swapColors()
         self.operation.swapButtonActivation()
-        print("flashCm")
 
 class runCm(commands):
     def execute(self):
+        MCP2200.run_mode()
         self.operation.swapColors()
         self.operation.swapButtonActivation()
-        print("runCm")
 
 class onCm(commands):
     def execute(self):
+        MCP2200.power(on)
         self.operation.swapColors()
         self.operation.swapButtonActivation()
-        print("onCm")
 
 class offCm(commands):
     def execute(self):
+        MCP2200.power(off)
         self.operation.swapColors()
         self.operation.swapButtonActivation()
-        print("offCm")
 
 class restartPwCm(commands):
     def execute(self):
@@ -71,7 +123,9 @@ class restartPwCm(commands):
 
 class fastRestartCm(commands):
     def execute(self):
-        print("fastRestartCm")
+        MCP2200.power(off)
+        time.sleep(1)
+        MCP2200.power(on)
 
 class reloadCm(commands):
     def execute(self):
@@ -122,10 +176,9 @@ class RemoteApp:
         # workaround bug
         self.ui.connectedFrame.setEnabled(False)
 
-
-
 if __name__ == "__main__":
     # Init the UI
+    MCP2200 = usbControl()
     app = QtWidgets.QApplication(sys.argv)
     mainWindow = QtWidgets.QMainWindow()
 
