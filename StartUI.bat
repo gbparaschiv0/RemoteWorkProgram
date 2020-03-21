@@ -1,0 +1,1 @@
+pythonw remote_main.py
